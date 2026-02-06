@@ -1,0 +1,59 @@
+---
+title: "CampusEvents — Schéma d'Architecture Docker"
+---
+graph TB
+    subgraph Internet["🌐 Client (navigateur)"]
+        Browser["Navigateur Web"]
+    end
+
+    subgraph DockerHost["🐳 Docker Host"]
+
+        subgraph ProxyNetwork["Réseau PUBLIC : proxy_net (bridge)"]
+            Nginx["<b>Nginx</b><br/>Reverse Proxy<br/>Port exposé : 80<br/>─────────<br/>app.localhost → Frontend<br/>api.localhost → Backend"]
+        end
+
+        subgraph FrontContainer["Frontend"]
+            Front["<b>Vue 3 + Vite</b><br/>Build multi-stage<br/>Servi par Nginx interne<br/>Port interne : 80"]
+        end
+
+        subgraph BackContainer["Backend"]
+            API["<b>Express.js + Prisma</b><br/>API REST + JWT<br/>Swagger /api/docs<br/>Port interne : 3000<br/>Healthcheck : GET /health"]
+        end
+
+        subgraph Worker["Worker (async)"]
+            W["<b>Bull + Redis</b><br/>Worker de jobs<br/>Ex : notification<br/>d'inscription"]
+        end
+
+        subgraph PrivateNetwork["Réseau PRIVÉ : backend_net (bridge)"]
+            DB["<b>PostgreSQL 16</b><br/>Port interne : 5432<br/>NON exposé au host<br/>Volume : pg_data"]
+            Redis["<b>Redis 7 Alpine</b><br/>Port interne : 6379<br/>NON exposé au host<br/>Cache + Queue"]
+        end
+
+        subgraph Volumes["📦 Volumes persistants"]
+            V1["pg_data<br/>(données PostgreSQL)"]
+        end
+
+    end
+
+    Browser -->|"HTTP :80"| Nginx
+    Nginx -->|"app.localhost"| Front
+    Nginx -->|"api.localhost/api/*"| API
+    API --> DB
+    API --> Redis
+    W --> Redis
+    W --> DB
+    DB --- V1
+
+    classDef proxy fill:#ff9f43,stroke:#e67e22,color:#000,font-weight:bold
+    classDef front fill:#2ed573,stroke:#20bf6b,color:#000,font-weight:bold
+    classDef back fill:#5352ed,stroke:#3742fa,color:#fff,font-weight:bold
+    classDef data fill:#ff6b81,stroke:#ee5a6f,color:#000,font-weight:bold
+    classDef worker fill:#a29bfe,stroke:#6c5ce7,color:#000,font-weight:bold
+    classDef volume fill:#dfe6e9,stroke:#b2bec3,color:#000
+
+    class Nginx proxy
+    class Front front
+    class API back
+    class DB,Redis data
+    class W worker
+    class V1 volume

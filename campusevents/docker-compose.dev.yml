@@ -1,0 +1,49 @@
+# docker-compose.dev.yml
+# Usage : docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Ou via : make dev
+
+services:
+
+  # En dev, on bypass le build frontend et on utilise Vite en mode dev
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://api.localhost/api
+
+  # En dev, on monte le code source pour hot-reload
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+
+  # Worker aussi en hot-reload
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npx nodemon src/worker.js
+    environment:
+      - NODE_ENV=development
+
+  # En dev, on peut exposer la DB pour debug avec un client SQL
+  db:
+    ports:
+      - "5433:5432"
+
+  # En dev, on peut exposer Redis pour debug
+  redis:
+    ports:
+      - "6380:6379"

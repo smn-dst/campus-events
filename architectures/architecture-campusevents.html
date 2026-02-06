@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CampusEvents — Architecture Docker</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f0f23;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle {
+    text-align: center;
+    color: #94a3b8;
+    margin-bottom: 32px;
+    font-size: 0.95rem;
+  }
+
+  .arch-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Browser */
+  .browser-row {
+    display: flex;
+    justify-content: center;
+  }
+  .browser-box {
+    background: #1e293b;
+    border: 2px solid #475569;
+    border-radius: 12px;
+    padding: 14px 28px;
+    text-align: center;
+    font-weight: 600;
+  }
+  .browser-box .icon { font-size: 1.6rem; }
+
+  /* Arrow */
+  .arrow-down {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    color: #64748b;
+    font-size: 0.8rem;
+  }
+  .arrow-down .line {
+    width: 2px;
+    height: 20px;
+    background: #475569;
+  }
+  .arrow-down .head {
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid #475569;
+  }
+
+  /* Docker host */
+  .docker-host {
+    border: 2px dashed #3b82f6;
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+  }
+  .docker-host-label {
+    position: absolute;
+    top: -14px;
+    left: 20px;
+    background: #0f0f23;
+    padding: 0 12px;
+    color: #3b82f6;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  /* Network labels */
+  .network-section {
+    border: 1.5px solid;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .network-label {
+    position: absolute;
+    top: -11px;
+    left: 16px;
+    padding: 0 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: #0f0f23;
+    border-radius: 4px;
+  }
+  .public-net {
+    border-color: #f59e0b;
+  }
+  .public-net .network-label { color: #f59e0b; }
+  .private-net {
+    border-color: #ef4444;
+  }
+  .private-net .network-label { color: #ef4444; }
+
+  /* Service cards */
+  .services-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .service-card {
+    flex: 1;
+    min-width: 180px;
+    max-width: 260px;
+    border-radius: 10px;
+    padding: 16px;
+    position: relative;
+    transition: transform 0.2s;
+  }
+  .service-card:hover {
+    transform: translateY(-3px);
+  }
+  .service-card h3 {
+    font-size: 1rem;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .service-card .detail {
+    font-size: 0.78rem;
+    color: #cbd5e1;
+    line-height: 1.5;
+  }
+  .service-card .tag {
+    display: inline-block;
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-top: 6px;
+    font-weight: 600;
+  }
+
+  .card-nginx { background: linear-gradient(135deg, #b45309, #92400e); }
+  .card-nginx .tag { background: #fbbf24; color: #000; }
+
+  .card-front { background: linear-gradient(135deg, #047857, #065f46); }
+  .card-front .tag { background: #34d399; color: #000; }
+
+  .card-back { background: linear-gradient(135deg, #4338ca, #3730a3); }
+  .card-back .tag { background: #818cf8; color: #000; }
+
+  .card-worker { background: linear-gradient(135deg, #7e22ce, #6b21a8); }
+  .card-worker .tag { background: #c084fc; color: #000; }
+
+  .card-db { background: linear-gradient(135deg, #be185d, #9d174d); }
+  .card-db .tag { background: #f472b6; color: #000; }
+
+  .card-redis { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+  .card-redis .tag { background: #fca5a5; color: #000; }
+
+  /* Volumes */
+  .volumes-row {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .volume-badge {
+    background: #1e293b;
+    border: 1.5px solid #475569;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    text-align: center;
+  }
+  .volume-badge .icon { font-size: 1.1rem; }
+
+  /* Summary table */
+  .summary {
+    margin-top: 28px;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .summary h2 {
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+    color: #94a3b8;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 12px;
+  }
+  .summary-card {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .summary-card h3 {
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    color: #e2e8f0;
+  }
+  .summary-card p, .summary-card li {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+  .summary-card ul {
+    padding-left: 16px;
+  }
+  .summary-card code {
+    background: #334155;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    color: #fbbf24;
+  }
+
+  /* Routing table */
+  .route-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin-top: 6px;
+  }
+  .route-table th {
+    text-align: left;
+    color: #94a3b8;
+    padding: 4px 8px;
+    border-bottom: 1px solid #334155;
+  }
+  .route-table td {
+    padding: 4px 8px;
+    color: #cbd5e1;
+  }
+  .route-table tr:nth-child(even) td {
+    background: #0f172a;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<h1>🎓 CampusEvents — Architecture Docker</h1>
+<p class="subtitle">Application Front + Back conteneurisée • Vue 3 + Express + PostgreSQL + Redis + Nginx</p>
+
+<div class="arch-container">
+
+  <!-- Browser -->
+  <div class="browser-row">
+    <div class="browser-box">
+      <div class="icon">🌐</div>
+      Navigateur Web
+    </div>
+  </div>
+
+  <div class="arrow-down">
+    <div class="line"></div>
+    <span>HTTP :80</span>
+    <div class="head"></div>
+  </div>
+
+  <!-- Docker Host -->
+  <div class="docker-host">
+    <div class="docker-host-label">🐳 Docker Compose</div>
+
+    <!-- Public Network -->
+    <div class="network-section public-net">
+      <div class="network-label">🔓 Réseau PUBLIC — proxy_net</div>
+      <div class="services-row">
+
+        <div class="service-card card-nginx">
+          <h3>🔀 Nginx</h3>
+          <div class="detail">
+            Reverse Proxy<br>
+            Port exposé : <b>80 → host</b><br>
+            Route <code>app.localhost</code> → Front<br>
+            Route <code>api.localhost</code> → API
+          </div>
+          <span class="tag">SEUL PORT EXPOSÉ</span>
+        </div>
+
+        <div class="service-card card-front">
+          <h3>🖥️ Frontend</h3>
+          <div class="detail">
+            Vue 3 + Vite<br>
+            Build multi-stage<br>
+            Servi par Nginx interne<br>
+            Port interne : 80
+          </div>
+          <span class="tag">Dockerfile multi-stage</span>
+        </div>
+
+        <div class="service-card card-back">
+          <h3>⚙️ Backend API</h3>
+          <div class="detail">
+            Express.js + Prisma<br>
+            API REST + JWT Auth<br>
+            Swagger : <code>/api/docs</code><br>
+            Port interne : 3000
+          </div>
+          <span class="tag">Healthcheck /health</span>
+        </div>
+
+        <div class="service-card card-worker">
+          <h3>👷 Worker</h3>
+          <div class="detail">
+            BullMQ<br>
+            Jobs asynchrones<br>
+            Ex : notification inscription<br>
+            Même image que le back
+          </div>
+          <span class="tag">Async queue</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Private Network -->
+    <div class="network-section private-net" style="margin-top: 16px;">
+      <div class="network-label">🔒 Réseau PRIVÉ — backend_net (aucun port exposé au host)</div>
+      <div class="services-row">
+
+        <div class="service-card card-db">
+          <h3>🗄️ PostgreSQL 16</h3>
+          <div class="detail">
+            Port interne : 5432<br>
+            <b>NON exposé</b> au host<br>
+            Volume : <code>pg_data</code><br>
+            Healthcheck : pg_isready
+          </div>
+          <span class="tag">Données persistantes</span>
+        </div>
+
+        <div class="service-card card-redis">
+          <h3>⚡ Redis 7</h3>
+          <div class="detail">
+            Port interne : 6379<br>
+            <b>NON exposé</b> au host<br>
+            Cache + File de jobs<br>
+            Healthcheck : redis-cli ping
+          </div>
+          <span class="tag">Cache + Queue</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Volumes -->
+    <div class="volumes-row">
+      <div class="volume-badge">
+        <div class="icon">💾</div>
+        <div><b>pg_data</b></div>
+        <div style="font-size:0.72rem; color:#64748b;">Données PostgreSQL</div>
+      </div>
+    </div>
+
+  </div><!-- docker-host -->
+
+</div><!-- arch-container -->
+
+<!-- Summary -->
+<div class="summary">
+  <h2>📋 Récapitulatif technique</h2>
+  <div class="summary-grid">
+
+    <div class="summary-card">
+      <h3>🔀 Routage Nginx</h3>
+      <table class="route-table">
+        <tr><th>URL</th><th>Destination</th></tr>
+        <tr><td><code>app.localhost</code></td><td>Frontend (port 80)</td></tr>
+        <tr><td><code>api.localhost/api/*</code></td><td>Backend (port 3000)</td></tr>
+        <tr><td><code>api.localhost/api/docs</code></td><td>Swagger UI</td></tr>
+      </table>
+    </div>
+
+    <div class="summary-card">
+      <h3>🔒 Sécurité</h3>
+      <ul>
+        <li>DB & Redis uniquement sur <code>backend_net</code></li>
+        <li>Seul le port <b>80</b> est exposé (Nginx)</li>
+        <li>Secrets dans <code>.env</code> (non commité)</li>
+        <li><code>.env.example</code> fourni sans secrets</li>
+      </ul>
+    </div>
+
+    <div class="summary-card">
+      <h3>🏗️ Arborescence</h3>
+      <ul>
+        <li><code>frontend/</code> — Vue 3, Vite, Dockerfile</li>
+        <li><code>backend/</code> — Express, Prisma, Dockerfile</li>
+        <li><code>infra/</code> — nginx.conf</li>
+        <li><code>docker-compose.yml</code></li>
+        <li><code>docker-compose.dev.yml</code></li>
+        <li><code>Makefile</code></li>
+        <li><code>.env.example</code></li>
+      </ul>
+    </div>
+
+    <div class="summary-card">
+      <h3>🚀 Commandes</h3>
+      <ul>
+        <li><code>make up</code> — Lancer tout</li>
+        <li><code>make dev</code> — Mode développement</li>
+        <li><code>make migrate</code> — Migrations DB</li>
+        <li><code>make seed</code> — Données de test</li>
+        <li><code>make logs</code> — Voir les logs</li>
+        <li><code>make down</code> — Tout arrêter</li>
+      </ul>
+    </div>
+
+    <div class="summary-card">
+      <h3>✅ Healthchecks</h3>
+      <ul>
+        <li><b>PostgreSQL</b> : <code>pg_isready</code></li>
+        <li><b>Redis</b> : <code>redis-cli ping</code></li>
+        <li><b>API</b> : <code>GET /health</code> (HTTP 200)</li>
+      </ul>
+    </div>
+
+    <div class="summary-card">
+      <h3>📦 Stack technique</h3>
+      <ul>
+        <li><b>Front</b> : Vue 3 + Vite + Pinia + Vue Router</li>
+        <li><b>Back</b> : Express.js + Prisma + JWT</li>
+        <li><b>DB</b> : PostgreSQL 16</li>
+        <li><b>Cache/Queue</b> : Redis 7 + BullMQ</li>
+        <li><b>Proxy</b> : Nginx</li>
+        <li><b>Docs API</b> : Swagger (swagger-ui-express)</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
