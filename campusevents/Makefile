@@ -36,11 +36,11 @@ dev-down: ## Arrêter le mode développement
 
 .PHONY: migrate
 migrate: ## Exécuter les migrations Prisma
-	docker compose run --rm --no-deps migrate
+	docker compose run --rm --build migrate
 
 .PHONY: seed
 seed: ## Charger les données de test
-	docker compose run --rm --no-deps seed
+	docker compose run --rm --build seed
 
 .PHONY: db-reset
 db-reset: ## Reset complet de la DB (volumes supprimés)

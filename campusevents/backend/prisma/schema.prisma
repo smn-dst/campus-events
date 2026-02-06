@@ -7,19 +7,58 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ═══════════════════════════════════════════════
+// USER — Utilisateur (rôle user ou admin)
+// ═══════════════════════════════════════════════
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
-  role      String   @default("user")
+  firstName String
+  lastName  String
+  role      String   @default("user") // "user" | "admin"
   createdAt DateTime @default(now())
+
+  // Relations
+  createdEvents  Event[]        @relation("EventCreator")
+  registrations  Registration[]
 }
 
+// ═══════════════════════════════════════════════
+// EVENT — Événement campus
+// ═══════════════════════════════════════════════
 model Event {
   id          String   @id @default(cuid())
   title       String
   description String?
+  location    String
+  tags        String[] // ex: ["sport", "tech", "soirée"]
+  capacity    Int
   startAt     DateTime
   endAt       DateTime?
   createdAt   DateTime @default(now())
+
+  // L'admin qui a créé l'événement
+  createdById String
+  createdBy   User @relation("EventCreator", fields: [createdById], references: [id])
+
+  // Inscriptions
+  registrations Registration[]
+}
+
+// ═══════════════════════════════════════════════
+// REGISTRATION — Inscription d'un user à un event
+// ═══════════════════════════════════════════════
+model Registration {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId  String
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  eventId String
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Un user ne peut s'inscrire qu'une fois à un event
+  @@unique([userId, eventId])
 }
