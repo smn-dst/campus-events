@@ -7,7 +7,8 @@ COPY package.json package-lock.json* ./
 RUN npm install
 
 COPY . .
-ARG VITE_API_URL=http://api.localhost
+# URL vide = appels relatifs /api/... (même origine via Nginx proxy, évite blocages Brave)
+ARG VITE_API_URL=
 ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 

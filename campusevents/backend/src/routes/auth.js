@@ -87,14 +87,67 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // #region agent log
+    const loginStartPayload = {
+      location: 'auth.js:login:start',
+      message: 'Login attempt',
+      data: { email },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      hypothesisId: 'H1',
+    };
+    fetch('http://127.0.0.1:7242/ingest/83b86bb7-af3e-4e95-ac3f-07136a90e463', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(loginStartPayload),
+    }).catch(() => {});
+    console.log('[DEBUG]', JSON.stringify(loginStartPayload));
+    // #endregion
+
     // Chercher l'utilisateur par email
     const user = await prisma.user.findUnique({ where: { email } });
+
+    // #region agent log
+    const userLookupPayload = {
+      location: 'auth.js:login:userLookup',
+      message: 'User lookup result',
+      data: { email, found: !!user },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      hypothesisId: 'H1',
+    };
+    fetch('http://127.0.0.1:7242/ingest/83b86bb7-af3e-4e95-ac3f-07136a90e463', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userLookupPayload),
+    }).catch(() => {});
+    console.log('[DEBUG]', JSON.stringify(userLookupPayload));
+    // #endregion
+
     if (!user) {
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
     }
 
     // Comparer le mot de passe avec le hash en base
     const valid = await bcrypt.compare(password, user.password);
+
+    // #region agent log
+    const passwordCheckPayload = {
+      location: 'auth.js:login:passwordCheck',
+      message: 'Password comparison result',
+      data: { email, valid },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      hypothesisId: 'H2',
+    };
+    fetch('http://127.0.0.1:7242/ingest/83b86bb7-af3e-4e95-ac3f-07136a90e463', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(passwordCheckPayload),
+    }).catch(() => {});
+    console.log('[DEBUG]', JSON.stringify(passwordCheckPayload));
+    // #endregion
+
     if (!valid) {
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
     }

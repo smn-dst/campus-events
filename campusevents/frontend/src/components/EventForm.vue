@@ -112,6 +112,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue';
+import { getApiUrl, apiFetch } from '../lib/api.js';
 
 const props = defineProps({
   eventId: {
@@ -143,9 +144,6 @@ const availableTags = [
   'ecologie', 'musique', 'atelier', 'entrepreneuriat'
 ];
 
-// Récupérer le token
-const token = localStorage.getItem('token');
-
 // Fonctions
 const toggleTag = (tag) => {
   const index = form.tags.indexOf(tag);
@@ -161,8 +159,8 @@ const fetchEvent = async () => {
 
   loading.value = true;
   try {
-    const response = await fetch(`http://api.localhost/api/events/${props.eventId}`);
-    
+    const response = await fetch(getApiUrl(`events/${props.eventId}`));
+
     if (!response.ok) {
       throw new Error('Événement introuvable');
     }
@@ -218,18 +216,13 @@ const handleSubmit = async () => {
       throw new Error('La date de fin doit être après la date de début');
     }
 
-    const url = isEdit.value
-      ? `http://api.localhost/api/events/${props.eventId}`
-      : 'http://api.localhost/api/events';
-
+    const path = isEdit.value
+      ? `events/${props.eventId}`
+      : 'events';
     const method = isEdit.value ? 'PUT' : 'POST';
 
-    const response = await fetch(url, {
+    const response = await apiFetch(path, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
       body: JSON.stringify(data),
     });
 
@@ -238,8 +231,7 @@ const handleSubmit = async () => {
       throw new Error(errorData.error || 'Erreur lors de l\'enregistrement');
     }
 
-    alert(isEdit.value ? '✅ Événement modifié !' : '✅ Événement créé !');
-    emit('success');
+    emit('success', isEdit.value ? 'updated' : 'created');
   } catch (err) {
     error.value = err.message;
     console.error('Error saving event:', err);
@@ -257,11 +249,8 @@ const handleDelete = async () => {
   error.value = null;
 
   try {
-    const response = await fetch(`http://api.localhost/api/events/${props.eventId}`, {
+    const response = await apiFetch(`events/${props.eventId}`, {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
     });
 
     if (!response.ok) {
@@ -269,8 +258,7 @@ const handleDelete = async () => {
       throw new Error(errorData.error || 'Erreur lors de la suppression');
     }
 
-    alert('✅ Événement supprimé !');
-    emit('success');
+    emit('success', 'deleted');
   } catch (err) {
     error.value = err.message;
     console.error('Error deleting event:', err);

@@ -144,6 +144,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuth } from '../composables/useAuth';
+import { getApiUrl, apiFetch } from '../lib/api.js';
 
 const props = defineProps({
   eventId: {
@@ -153,6 +155,7 @@ const props = defineProps({
 });
 
 const router = useRouter();
+const { isAuthenticated, isAdmin, currentUser } = useAuth();
 
 // État
 const event = ref(null);
@@ -160,15 +163,6 @@ const attendees = ref([]);
 const loading = ref(false);
 const error = ref(null);
 const isRegistered = ref(false);
-
-// Authentification
-const token = computed(() => localStorage.getItem('token'));
-const user = computed(() => {
-  const userStr = localStorage.getItem('user');
-  return userStr ? JSON.parse(userStr) : null;
-});
-const isAuthenticated = computed(() => !!token.value);
-const isAdmin = computed(() => user.value?.role === 'admin');
 
 const isPastEvent = computed(() => {
   if (!event.value) return false;
@@ -181,7 +175,7 @@ const fetchEvent = async () => {
   error.value = null;
 
   try {
-    const response = await fetch(`http://api.localhost/api/events/${props.eventId}`);
+    const response = await fetch(getApiUrl(`events/${props.eventId}`));
 
     if (!response.ok) {
       throw new Error('Événement introuvable');
@@ -200,19 +194,14 @@ const fetchAttendees = async () => {
   if (!isAuthenticated.value) return;
 
   try {
-    const response = await fetch(`http://api.localhost/api/events/${props.eventId}/attendees`, {
-      headers: {
-        'Authorization': `Bearer ${token.value}`,
-      },
-    });
+    const response = await apiFetch(`events/${props.eventId}/attendees`);
 
     if (response.ok) {
       const data = await response.json();
       attendees.value = data.attendees;
-      
-      // Vérifier si l'utilisateur est inscrit
+
       isRegistered.value = data.attendees.some(
-        a => a.user.id === user.value.id
+        a => a.user.id === currentUser.value?.id
       );
     }
   } catch (err) {
@@ -222,11 +211,8 @@ const fetchAttendees = async () => {
 
 const register = async () => {
   try {
-    const response = await fetch(`http://api.localhost/api/events/${props.eventId}/register`, {
+    const response = await apiFetch(`events/${props.eventId}/register`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token.value}`,
-      },
     });
 
     if (!response.ok) {
@@ -250,11 +236,8 @@ const unregister = async () => {
   }
 
   try {
-    const response = await fetch(`http://api.localhost/api/events/${props.eventId}/register`, {
+    const response = await apiFetch(`events/${props.eventId}/register`, {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token.value}`,
-      },
     });
 
     if (!response.ok) {

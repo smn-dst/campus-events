@@ -42,6 +42,10 @@ migrate: ## Exécuter les migrations Prisma
 seed: ## Charger les données de test
 	docker compose run --rm --build seed
 
+.PHONY: db-shell
+db-shell: ## Ouvrir un shell PostgreSQL (ex. \dt pour les tables, SELECT * FROM "User";)
+	docker compose exec db psql -U campus -d campusevents
+
 .PHONY: db-reset
 db-reset: ## Reset complet de la DB (volumes supprimés)
 	docker compose down -v

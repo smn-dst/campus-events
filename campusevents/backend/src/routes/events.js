@@ -15,6 +15,11 @@ const router = express.Router();
  * Query params: tags, location, startDate, endDate, search
  */
 router.get('/', async (req, res) => {
+  // #region agent log
+  const entryPayload = { location: 'events.js:GET/', message: 'GET /api/events handler entered', data: { query: req.query }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'H2' };
+  fetch('http://127.0.0.1:7242/ingest/83b86bb7-af3e-4e95-ac3f-07136a90e463',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entryPayload)}).catch(()=>{});
+  console.log('[DEBUG]', JSON.stringify(entryPayload));
+  // #endregion
   try {
     const { tags, location, startDate, endDate, search } = req.query;
 
@@ -114,6 +119,56 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('Error fetching events:', error);
     res.status(500).json({ error: 'Failed to fetch events' });
+  }
+});
+
+/**
+ * GET /api/events/my/registrations
+ * Liste des événements auxquels l'utilisateur est inscrit (doit être avant /:id)
+ */
+router.get('/my/registrations', authenticate, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const registrations = await prisma.registration.findMany({
+      where: { userId },
+      include: {
+        event: {
+          include: {
+            createdBy: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+            _count: {
+              select: { registrations: true },
+            },
+          },
+        },
+      },
+      orderBy: {
+        event: {
+          startAt: 'asc',
+        },
+      },
+    });
+
+    const events = registrations.map((reg) => ({
+      registrationId: reg.id,
+      registeredAt: reg.createdAt,
+      event: {
+        ...reg.event,
+        attendeesCount: reg.event._count.registrations,
+        availableSpots: reg.event.capacity - reg.event._count.registrations,
+      },
+    }));
+
+    res.json(events);
+  } catch (error) {
+    console.error('Error fetching user registrations:', error);
+    res.status(500).json({ error: 'Failed to fetch registrations' });
   }
 });
 
@@ -488,56 +543,6 @@ router.get('/:id/attendees', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Error fetching attendees:', error);
     res.status(500).json({ error: 'Failed to fetch attendees' });
-  }
-});
-
-/**
- * GET /api/events/my/registrations
- * Liste des événements auxquels l'utilisateur est inscrit
- */
-router.get('/my/registrations', authenticate, async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    const registrations = await prisma.registration.findMany({
-      where: { userId },
-      include: {
-        event: {
-          include: {
-            createdBy: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-            _count: {
-              select: { registrations: true },
-            },
-          },
-        },
-      },
-      orderBy: {
-        event: {
-          startAt: 'asc',
-        },
-      },
-    });
-
-    const events = registrations.map((reg) => ({
-      registrationId: reg.id,
-      registeredAt: reg.createdAt,
-      event: {
-        ...reg.event,
-        attendeesCount: reg.event._count.registrations,
-        availableSpots: reg.event.capacity - reg.event._count.registrations,
-      },
-    }));
-
-    res.json(events);
-  } catch (error) {
-    console.error('Error fetching user registrations:', error);
-    res.status(500).json({ error: 'Failed to fetch registrations' });
   }
 });
 

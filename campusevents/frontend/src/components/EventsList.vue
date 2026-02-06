@@ -104,8 +104,11 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuth } from '../composables/useAuth';
+import { getApiUrl, apiFetch } from '../lib/api.js';
 
 const router = useRouter();
+const { isAuthenticated, isAdmin } = useAuth();
 
 // État
 const events = ref([]);
@@ -125,28 +128,18 @@ const availableTags = [
   'ecologie', 'musique', 'atelier', 'entrepreneuriat'
 ];
 
-// Récupérer le token et le rôle depuis le localStorage
-const token = computed(() => localStorage.getItem('token'));
-const user = computed(() => {
-  const userStr = localStorage.getItem('user');
-  return userStr ? JSON.parse(userStr) : null;
-});
-const isAuthenticated = computed(() => !!token.value);
-const isAdmin = computed(() => user.value?.role === 'admin');
-
 // Fonctions
 const fetchEvents = async () => {
   loading.value = true;
   error.value = null;
 
   try {
-    // Construire l'URL avec les filtres
     const params = new URLSearchParams();
     if (filters.search) params.append('search', filters.search);
     if (filters.location) params.append('location', filters.location);
     if (filters.tags.length > 0) params.append('tags', filters.tags.join(','));
 
-    const url = `http://api.localhost/api/events?${params.toString()}`;
+    const url = `${getApiUrl('events')}?${params.toString()}`;
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -166,11 +159,7 @@ const fetchMyRegistrations = async () => {
   if (!isAuthenticated.value) return;
 
   try {
-    const response = await fetch('http://api.localhost/api/events/my/registrations', {
-      headers: {
-        'Authorization': `Bearer ${token.value}`,
-      },
-    });
+    const response = await apiFetch('events/my/registrations');
 
     if (response.ok) {
       const data = await response.json();
@@ -206,11 +195,8 @@ const isRegistered = (eventId) => {
 
 const registerToEvent = async (eventId) => {
   try {
-    const response = await fetch(`http://api.localhost/api/events/${eventId}/register`, {
+    const response = await apiFetch(`events/${eventId}/register`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token.value}`,
-      },
     });
 
     if (!response.ok) {
