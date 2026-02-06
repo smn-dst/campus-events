@@ -9,6 +9,7 @@ import morgan from 'morgan';
 
 // Routes
 import authRoutes from './routes/auth.js';
+import eventsRoutes from './routes/events.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +25,7 @@ app.get('/health', (req, res) => {
 });
 
 // ── Routes API ──────────────────────────────
+app.use('/api/events', eventsRoutes);
 app.use('/api/auth', authRoutes);
 
 // ── 404 — Route non trouvée ─────────────────
