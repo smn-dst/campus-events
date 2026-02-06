@@ -1,5 +1,6 @@
 import express from 'express';
 import prisma from '../lib/prisma.js';
+import { registrationQueue } from '../lib/queue.js';
 import { authenticate } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/admin.js';
 
@@ -15,11 +16,6 @@ const router = express.Router();
  * Query params: tags, location, startDate, endDate, search
  */
 router.get('/', async (req, res) => {
-  // #region agent log
-  const entryPayload = { location: 'events.js:GET/', message: 'GET /api/events handler entered', data: { query: req.query }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'H2' };
-  fetch('http://127.0.0.1:7242/ingest/83b86bb7-af3e-4e95-ac3f-07136a90e463',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entryPayload)}).catch(()=>{});
-  console.log('[DEBUG]', JSON.stringify(entryPayload));
-  // #endregion
   try {
     const { tags, location, startDate, endDate, search } = req.query;
 
@@ -432,6 +428,23 @@ router.post('/:id/register', authenticate, async (req, res) => {
         eventId: id,
       },
     });
+
+    // ── Envoyer un job dans la queue Redis ──────
+    // Le worker va le traiter de manière asynchrone
+    try {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      await registrationQueue.add('registration-confirmation', {
+        userName: `${user.firstName} ${user.lastName}`,
+        userEmail: user.email,
+        eventTitle: event.title,
+        eventDate: event.startAt.toISOString(),
+        eventLocation: event.location,
+      });
+      console.log(`📨 Job ajouté à la queue pour ${user.email} → ${event.title}`);
+    } catch (queueErr) {
+      // Si Redis est down, on log l'erreur mais on ne bloque pas l'inscription
+      console.error('⚠️  Impossible d\'ajouter le job à la queue:', queueErr.message);
+    }
 
     res.status(201).json({
       message: 'Successfully registered to event',

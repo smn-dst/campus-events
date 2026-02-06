@@ -58,13 +58,13 @@ async function main() {
   // 3. Créer des événements variés
   const events = [
     {
-      title: 'Hackathon IA 2025',
+      title: 'Hackathon IA 2026',
       description: 'Concours de programmation IA sur 48h. Challenges innovants, mentorat, et prix à gagner !',
       location: 'Amphithéâtre A - Campus Paris',
       tags: ['tech', 'competition', 'innovation'],
       capacity: 50,
-      startAt: new Date('2025-03-15T09:00:00Z'),
-      endAt: new Date('2025-03-17T18:00:00Z'),
+      startAt: new Date('2026-03-15T09:00:00Z'),
+      endAt: new Date('2026-03-17T18:00:00Z'),
       createdById: admin.id,
     },
     {
@@ -73,8 +73,8 @@ async function main() {
       location: 'Salle des fêtes - Campus Lyon',
       tags: ['soiree', 'culture', 'social'],
       capacity: 200,
-      startAt: new Date('2025-02-20T20:00:00Z'),
-      endAt: new Date('2025-02-21T02:00:00Z'),
+      startAt: new Date('2026-02-20T20:00:00Z'),
+      endAt: new Date('2026-02-21T02:00:00Z'),
       createdById: admin.id,
     },
     {
@@ -83,8 +83,8 @@ async function main() {
       location: 'Stade universitaire - Campus Marseille',
       tags: ['sport', 'competition'],
       capacity: 100,
-      startAt: new Date('2025-04-10T14:00:00Z'),
-      endAt: new Date('2025-04-10T19:00:00Z'),
+      startAt: new Date('2026-04-10T14:00:00Z'),
+      endAt: new Date('2026-04-10T19:00:00Z'),
       createdById: admin.id,
     },
     {
@@ -93,8 +93,8 @@ async function main() {
       location: 'Salle de conférence - Campus Lille',
       tags: ['entrepreneuriat', 'networking', 'carriere'],
       capacity: 80,
-      startAt: new Date('2025-03-05T18:00:00Z'),
-      endAt: new Date('2025-03-05T21:00:00Z'),
+      startAt: new Date('2026-03-05T18:00:00Z'),
+      endAt: new Date('2026-03-05T21:00:00Z'),
       createdById: admin.id,
     },
     {
@@ -103,8 +103,8 @@ async function main() {
       location: 'Espace écologique - Campus Bordeaux',
       tags: ['ecologie', 'atelier', 'social'],
       capacity: 30,
-      startAt: new Date('2025-02-25T14:00:00Z'),
-      endAt: new Date('2025-02-25T17:00:00Z'),
+      startAt: new Date('2026-02-25T14:00:00Z'),
+      endAt: new Date('2026-02-25T17:00:00Z'),
       createdById: admin.id,
     },
     {
@@ -113,8 +113,8 @@ async function main() {
       location: 'Cafétéria Campus - Campus Toulouse',
       tags: ['musique', 'culture', 'soiree'],
       capacity: 120,
-      startAt: new Date('2025-03-12T19:00:00Z'),
-      endAt: new Date('2025-03-12T22:00:00Z'),
+      startAt: new Date('2026-03-12T19:00:00Z'),
+      endAt: new Date('2026-03-12T22:00:00Z'),
       createdById: admin.id,
     },
     {
@@ -123,8 +123,8 @@ async function main() {
       location: 'Pelouse centrale - Campus Nice',
       tags: ['sport', 'bien-etre'],
       capacity: 40,
-      startAt: new Date('2025-02-18T08:00:00Z'),
-      endAt: new Date('2025-02-18T09:30:00Z'),
+      startAt: new Date('2026-02-18T08:00:00Z'),
+      endAt: new Date('2026-02-18T09:30:00Z'),
       createdById: admin.id,
     },
     {
@@ -133,33 +133,33 @@ async function main() {
       location: 'Hall principal - Campus Nantes',
       tags: ['carriere', 'networking', 'tech'],
       capacity: 150,
-      startAt: new Date('2025-04-08T10:00:00Z'),
-      endAt: new Date('2025-04-08T17:00:00Z'),
+      startAt: new Date('2026-04-08T10:00:00Z'),
+      endAt: new Date('2026-04-08T17:00:00Z'),
       createdById: admin.id,
     },
   ];
 
+  const createdEvents = [];
   for (const eventData of events) {
-    await prisma.event.create({ data: eventData });
+    const event = await prisma.event.create({ data: eventData });
+    createdEvents.push(event);
     console.log(`✅ Événement créé: ${eventData.title}`);
   }
 
-  // 4. Créer quelques inscriptions
-  const allEvents = await prisma.event.findMany();
-  
-  // Alice s'inscrit aux 3 premiers événements
-  for (let i = 0; i < 3 && i < allEvents.length; i++) {
+  // 4. Créer quelques inscriptions (uniquement sur les événements qu'on vient de créer)
+  // Alice s'inscrit aux 3 premiers
+  for (let i = 0; i < 3 && i < createdEvents.length; i++) {
     await prisma.registration.create({
       data: {
         userId: alice.id,
-        eventId: allEvents[i].id,
+        eventId: createdEvents[i].id,
       },
     });
-    console.log(`✅ Inscription: ${alice.firstName} → ${allEvents[i].title}`);
+    console.log(`✅ Inscription: ${alice.firstName} → ${createdEvents[i].title}`);
   }
 
-  // Bob s'inscrit aux événements sportifs
-  const sportEvents = allEvents.filter(e => e.tags.includes('sport'));
+  // Bob s'inscrit aux événements sportifs (parmi ceux créés ce run)
+  const sportEvents = createdEvents.filter(e => e.tags.includes('sport'));
   for (const event of sportEvents) {
     await prisma.registration.create({
       data: {
