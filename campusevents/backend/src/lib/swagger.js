@@ -1,8 +1,3 @@
-// ═══════════════════════════════════════════════
-// Spécification OpenAPI 3.0 — CampusEvents
-// Accessible sur : http://api.localhost/api/docs
-// ═══════════════════════════════════════════════
-
 const swaggerSpec = {
   openapi: '3.0.3',
   info: {
@@ -14,16 +9,12 @@ const swaggerSpec = {
   servers: [
     { url: 'http://api.localhost', description: 'Local (via Nginx reverse proxy)' },
   ],
-
-  // ── Tags ─────────────────────────────────────
   tags: [
     { name: 'Auth', description: 'Inscription, connexion et profil' },
     { name: 'Events', description: 'CRUD événements (admin) et consultation (public)' },
     { name: 'Registration', description: 'Inscription / désinscription à un événement' },
     { name: 'Health', description: 'Healthcheck' },
   ],
-
-  // ── Sécurité ─────────────────────────────────
   components: {
     securitySchemes: {
       bearerAuth: {
@@ -34,7 +25,6 @@ const swaggerSpec = {
       },
     },
     schemas: {
-      // ── User ────────────────────────────────
       User: {
         type: 'object',
         properties: {
@@ -46,7 +36,6 @@ const swaggerSpec = {
           createdAt: { type: 'string', format: 'date-time' },
         },
       },
-      // ── Event ───────────────────────────────
       Event: {
         type: 'object',
         properties: {
@@ -65,7 +54,6 @@ const swaggerSpec = {
           isFull: { type: 'boolean', example: false },
         },
       },
-      // ── Registration ────────────────────────
       Registration: {
         type: 'object',
         properties: {
@@ -75,7 +63,6 @@ const swaggerSpec = {
           createdAt: { type: 'string', format: 'date-time' },
         },
       },
-      // ── Error ───────────────────────────────
       Error: {
         type: 'object',
         properties: {
@@ -84,12 +71,7 @@ const swaggerSpec = {
       },
     },
   },
-
-  // ════════════════════════════════════════════════
-  // PATHS
-  // ════════════════════════════════════════════════
   paths: {
-    // ── Health ──────────────────────────────────
     '/health': {
       get: {
         tags: ['Health'],
@@ -112,8 +94,6 @@ const swaggerSpec = {
         },
       },
     },
-
-    // ── Auth ────────────────────────────────────
     '/api/auth/register': {
       post: {
         tags: ['Auth'],
@@ -155,7 +135,6 @@ const swaggerSpec = {
         },
       },
     },
-
     '/api/auth/login': {
       post: {
         tags: ['Auth'],
@@ -194,7 +173,6 @@ const swaggerSpec = {
         },
       },
     },
-
     '/api/auth/me': {
       get: {
         tags: ['Auth'],
@@ -209,8 +187,6 @@ const swaggerSpec = {
         },
       },
     },
-
-    // ── Events ──────────────────────────────────
     '/api/events': {
       get: {
         tags: ['Events'],
@@ -265,7 +241,6 @@ const swaggerSpec = {
         },
       },
     },
-
     '/api/events/{id}': {
       get: {
         tags: ['Events'],
@@ -320,8 +295,6 @@ const swaggerSpec = {
         },
       },
     },
-
-    // ── Registration ────────────────────────────
     '/api/events/{id}/register': {
       post: {
         tags: ['Registration'],

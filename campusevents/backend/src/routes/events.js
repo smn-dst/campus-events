@@ -6,23 +6,11 @@ import { requireAdmin } from '../middleware/admin.js';
 
 const router = express.Router();
 
-// ════════════════════════════════════════════════════════════
-// ROUTES PUBLIQUES (sans authentification)
-// ════════════════════════════════════════════════════════════
-
-/**
- * GET /api/events
- * Liste tous les événements avec filtres optionnels
- * Query params: tags, location, startDate, endDate, search
- */
 router.get('/', async (req, res) => {
   try {
     const { tags, location, startDate, endDate, search } = req.query;
-
-    // Construction du filtre dynamique
     const where = {
       AND: [
-        // Filtre par tags (ex: ?tags=sport,tech)
         tags && tags.length > 0
           ? {
               tags: {
@@ -30,8 +18,6 @@ router.get('/', async (req, res) => {
               },
             }
           : {},
-        
-        // Filtre par localisation (recherche partielle insensible à la casse)
         location
           ? {
               location: {
@@ -40,8 +26,6 @@ router.get('/', async (req, res) => {
               },
             }
           : {},
-        
-        // Filtre par date de début
         startDate
           ? {
               startAt: {
@@ -49,8 +33,6 @@ router.get('/', async (req, res) => {
               },
             }
           : {},
-        
-        // Filtre par date de fin
         endDate
           ? {
               startAt: {
@@ -58,8 +40,6 @@ router.get('/', async (req, res) => {
               },
             }
           : {},
-        
-        // Recherche textuelle (titre ou description)
         search
           ? {
               OR: [
@@ -78,7 +58,7 @@ router.get('/', async (req, res) => {
               ],
             }
           : {},
-      ].filter((filter) => Object.keys(filter).length > 0), // Enlever les filtres vides
+      ].filter((filter) => Object.keys(filter).length > 0),
     };
 
     const events = await prisma.event.findMany({
@@ -102,8 +82,6 @@ router.get('/', async (req, res) => {
         startAt: 'asc',
       },
     });
-
-    // Ajouter les informations calculées
     const eventsWithDetails = events.map((event) => ({
       ...event,
       attendeesCount: event._count.registrations,
@@ -118,10 +96,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * GET /api/events/my/registrations
- * Liste des événements auxquels l'utilisateur est inscrit (doit être avant /:id)
- */
 router.get('/my/registrations', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -168,10 +142,6 @@ router.get('/my/registrations', authenticate, async (req, res) => {
   }
 });
 
-/**
- * GET /api/events/:id
- * Détail d'un événement
- */
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -198,8 +168,6 @@ router.get('/:id', async (req, res) => {
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
-
-    // Ajouter les informations calculées
     const eventWithDetails = {
       ...event,
       attendeesCount: event._count.registrations,
@@ -214,19 +182,9 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════
-// ROUTES ADMIN (création, modification, suppression)
-// ════════════════════════════════════════════════════════════
-
-/**
- * POST /api/events
- * Créer un nouvel événement (admin seulement)
- */
 router.post('/', authenticate, requireAdmin, async (req, res) => {
   try {
     const { title, description, location, tags, capacity, startAt, endAt } = req.body;
-
-    // Validation
     if (!title || !location || !capacity || !startAt) {
       return res.status(400).json({
         error: 'Missing required fields: title, location, capacity, startAt',
@@ -247,12 +205,9 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
     if (endDate && isNaN(endDate.getTime())) {
       return res.status(400).json({ error: 'Invalid end date' });
     }
-
     if (endDate && endDate <= startDate) {
       return res.status(400).json({ error: 'End date must be after start date' });
     }
-
-    // Créer l'événement
     const event = await prisma.event.create({
       data: {
         title,
@@ -283,16 +238,10 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
   }
 });
 
-/**
- * PUT /api/events/:id
- * Modifier un événement (admin seulement)
- */
 router.put('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, location, tags, capacity, startAt, endAt } = req.body;
-
-    // Vérifier que l'événement existe
     const existingEvent = await prisma.event.findUnique({
       where: { id },
       include: {
@@ -305,23 +254,17 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
     if (!existingEvent) {
       return res.status(404).json({ error: 'Event not found' });
     }
-
-    // Si on réduit la capacité, vérifier qu'on ne passe pas en dessous du nombre d'inscrits
     if (capacity && parseInt(capacity) < existingEvent._count.registrations) {
       return res.status(400).json({
         error: `Cannot reduce capacity below current registrations (${existingEvent._count.registrations})`,
       });
     }
-
-    // Validation des dates
     const startDate = startAt ? new Date(startAt) : existingEvent.startAt;
     const endDate = endAt ? new Date(endAt) : existingEvent.endAt;
 
     if (endDate && endDate <= startDate) {
       return res.status(400).json({ error: 'End date must be after start date' });
     }
-
-    // Mise à jour
     const updatedEvent = await prisma.event.update({
       where: { id },
       data: {
@@ -355,15 +298,9 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
   }
 });
 
-/**
- * DELETE /api/events/:id
- * Supprimer un événement (admin seulement)
- */
 router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Vérifier que l'événement existe
     const event = await prisma.event.findUnique({
       where: { id },
     });
@@ -371,8 +308,6 @@ router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
-
-    // Supprimer l'événement (les registrations seront supprimées en cascade)
     await prisma.event.delete({
       where: { id },
     });
@@ -384,20 +319,10 @@ router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
   }
 });
 
-// ════════════════════════════════════════════════════════════
-// ROUTES UTILISATEURS (inscription, désinscription)
-// ════════════════════════════════════════════════════════════
-
-/**
- * POST /api/events/:id/register
- * S'inscrire à un événement
- */
 router.post('/:id/register', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-
-    // Vérifier que l'événement existe
     const event = await prisma.event.findUnique({
       where: { id },
       include: {
@@ -410,27 +335,18 @@ router.post('/:id/register', authenticate, async (req, res) => {
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
-
-    // Vérifier si l'événement est déjà passé
     if (event.startAt < new Date()) {
       return res.status(400).json({ error: 'Cannot register to past events' });
     }
-
-    // Vérifier la capacité
     if (event._count.registrations >= event.capacity) {
       return res.status(400).json({ error: 'Event is full' });
     }
-
-    // Créer l'inscription (unique constraint empêche les doublons)
     const registration = await prisma.registration.create({
       data: {
         userId,
         eventId: id,
       },
     });
-
-    // ── Envoyer un job dans la queue Redis ──────
-    // Le worker va le traiter de manière asynchrone
     try {
       const user = await prisma.user.findUnique({ where: { id: userId } });
       await registrationQueue.add('registration-confirmation', {
@@ -440,18 +356,14 @@ router.post('/:id/register', authenticate, async (req, res) => {
         eventDate: event.startAt.toISOString(),
         eventLocation: event.location,
       });
-      console.log(`📨 Job ajouté à la queue pour ${user.email} → ${event.title}`);
     } catch (queueErr) {
-      // Si Redis est down, on log l'erreur mais on ne bloque pas l'inscription
-      console.error('⚠️  Impossible d\'ajouter le job à la queue:', queueErr.message);
+      console.error('Queue error:', queueErr.message);
     }
-
     res.status(201).json({
       message: 'Successfully registered to event',
       registration,
     });
   } catch (error) {
-    // Gestion de l'erreur de doublon
     if (error.code === 'P2002') {
       return res.status(400).json({ error: 'Already registered to this event' });
     }
@@ -460,16 +372,10 @@ router.post('/:id/register', authenticate, async (req, res) => {
   }
 });
 
-/**
- * DELETE /api/events/:id/register
- * Se désinscrire d'un événement
- */
 router.delete('/:id/register', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-
-    // Vérifier que l'événement existe
     const event = await prisma.event.findUnique({
       where: { id },
     });
@@ -477,8 +383,6 @@ router.delete('/:id/register', authenticate, async (req, res) => {
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
-
-    // Chercher l'inscription
     const registration = await prisma.registration.findUnique({
       where: {
         userId_eventId: {
@@ -491,8 +395,6 @@ router.delete('/:id/register', authenticate, async (req, res) => {
     if (!registration) {
       return res.status(404).json({ error: 'Not registered to this event' });
     }
-
-    // Supprimer l'inscription
     await prisma.registration.delete({
       where: {
         id: registration.id,
@@ -506,15 +408,9 @@ router.delete('/:id/register', authenticate, async (req, res) => {
   }
 });
 
-/**
- * GET /api/events/:id/attendees
- * Liste des participants à un événement
- */
 router.get('/:id/attendees', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Vérifier que l'événement existe
     const event = await prisma.event.findUnique({
       where: { id },
     });
@@ -522,8 +418,6 @@ router.get('/:id/attendees', authenticate, async (req, res) => {
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
-
-    // Récupérer les inscrits
     const registrations = await prisma.registration.findMany({
       where: { eventId: id },
       include: {

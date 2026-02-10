@@ -1,19 +1,10 @@
-// ═══════════════════════════════════════════════
-// Script de seed pour créer des événements de test
-// Usage: node prisma/seed.js
-// ═══════════════════════════════════════════════
-
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting seed...');
-
-  // 1. Créer un admin
   const hashedPassword = await bcrypt.hash('admin123', 10);
-  
   const admin = await prisma.user.upsert({
     where: { email: 'admin@campus.fr' },
     update: {},
@@ -26,9 +17,6 @@ async function main() {
     },
   });
 
-  console.log('✅ Admin créé:', admin.email);
-
-  // 2. Créer des utilisateurs de test
   const alice = await prisma.user.upsert({
     where: { email: 'alice@campus.fr' },
     update: {},
@@ -53,9 +41,6 @@ async function main() {
     },
   });
 
-  console.log('✅ Utilisateurs créés:', alice.email, bob.email);
-
-  // 3. Créer des événements variés
   const events = [
     {
       title: 'Hackathon IA 2026',
@@ -143,11 +128,8 @@ async function main() {
   for (const eventData of events) {
     const event = await prisma.event.create({ data: eventData });
     createdEvents.push(event);
-    console.log(`✅ Événement créé: ${eventData.title}`);
   }
 
-  // 4. Créer quelques inscriptions (uniquement sur les événements qu'on vient de créer)
-  // Alice s'inscrit aux 3 premiers
   for (let i = 0; i < 3 && i < createdEvents.length; i++) {
     await prisma.registration.create({
       data: {
@@ -155,10 +137,8 @@ async function main() {
         eventId: createdEvents[i].id,
       },
     });
-    console.log(`✅ Inscription: ${alice.firstName} → ${createdEvents[i].title}`);
   }
 
-  // Bob s'inscrit aux événements sportifs (parmi ceux créés ce run)
   const sportEvents = createdEvents.filter(e => e.tags.includes('sport'));
   for (const event of sportEvents) {
     await prisma.registration.create({
@@ -167,15 +147,12 @@ async function main() {
         eventId: event.id,
       },
     });
-    console.log(`✅ Inscription: ${bob.firstName} → ${event.title}`);
   }
-
-  console.log('🎉 Seed completed successfully!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed failed:', e);
+    console.error('Seed failed:', e);
     process.exit(1);
   })
   .finally(async () => {

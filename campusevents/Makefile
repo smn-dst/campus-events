@@ -9,6 +9,24 @@ RESET  := \033[0m
 
 .DEFAULT_GOAL := help
 
+# ── Installation ─────────────────────────────
+
+.PHONY: setup
+setup: ## 🎓 Installation complète (1ère fois après clone)
+	@test -f .env || (cp .env.example .env && echo "✅ .env créé depuis .env.example")
+	docker compose up -d --build
+	@echo "⏳ Attente que la DB soit prête..."
+	@sleep 5
+	docker compose run --rm --build seed
+	@echo ""
+	@echo "🎉 CampusEvents est prêt !"
+	@echo "   Frontend : http://app.localhost"
+	@echo "   API :      http://api.localhost"
+	@echo "   Swagger :  http://api.localhost/api/docs"
+	@echo ""
+	@echo "   Admin : admin@campus.fr / admin123"
+	@echo "   User  : alice@campus.fr / user123"
+
 # ── Production ────────────────────────────────
 
 .PHONY: up
@@ -91,6 +109,12 @@ clean: ## Supprimer les conteneurs, réseaux et volumes
 	docker system prune -f
 
 # ── Scénario de panne ─────────────────────────
+
+.PHONY: test
+test: ## 🧪 Lancer les tests unitaires
+	docker compose run --rm --build -e JWT_SECRET=dev-secret backend npm test
+
+# ── Panne Redis ──────────────────────────────
 
 .PHONY: chaos-redis
 chaos-redis: ## Simuler une panne Redis

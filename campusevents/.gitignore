@@ -19,6 +19,3 @@ backend/dist/
 # ── OS ────────────────────────────────────────
 .DS_Store
 Thumbs.db
-
-# ── Docker ────────────────────────────────────
-# Les volumes Docker sont gérés par Docker, pas par git

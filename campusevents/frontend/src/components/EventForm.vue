@@ -123,7 +123,6 @@ const props = defineProps({
 
 const emit = defineEmits(['success', 'cancel']);
 
-// État
 const loading = ref(false);
 const error = ref(null);
 const isEdit = computed(() => !!props.eventId);
@@ -144,7 +143,6 @@ const availableTags = [
   'ecologie', 'musique', 'atelier', 'entrepreneuriat'
 ];
 
-// Fonctions
 const toggleTag = (tag) => {
   const index = form.tags.indexOf(tag);
   if (index > -1) {
@@ -166,15 +164,11 @@ const fetchEvent = async () => {
     }
 
     const event = await response.json();
-    
-    // Remplir le formulaire
     form.title = event.title;
     form.description = event.description || '';
     form.location = event.location;
     form.tags = event.tags;
     form.capacity = event.capacity;
-    
-    // Convertir les dates ISO en format datetime-local
     form.startAt = formatDateForInput(event.startAt);
     form.endAt = event.endAt ? formatDateForInput(event.endAt) : '';
   } catch (err) {
@@ -186,7 +180,6 @@ const fetchEvent = async () => {
 
 const formatDateForInput = (isoDate) => {
   const date = new Date(isoDate);
-  // Format: YYYY-MM-DDTHH:mm
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -200,7 +193,6 @@ const handleSubmit = async () => {
   error.value = null;
 
   try {
-    // Préparer les données
     const data = {
       title: form.title,
       description: form.description,
@@ -210,8 +202,6 @@ const handleSubmit = async () => {
       startAt: new Date(form.startAt).toISOString(),
       endAt: form.endAt ? new Date(form.endAt).toISOString() : null,
     };
-
-    // Valider les dates
     if (data.endAt && new Date(data.endAt) <= new Date(data.startAt)) {
       throw new Error('La date de fin doit être après la date de début');
     }
@@ -267,7 +257,6 @@ const handleDelete = async () => {
   }
 };
 
-// Charger l'événement si on est en mode édition
 onMounted(() => {
   if (isEdit.value) {
     fetchEvent();

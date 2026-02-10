@@ -1,4 +1,3 @@
-// En dev ou si VITE_API_URL='' (build Docker) : URL relative → même origine, pas de blocage navigateur.
 const API_BASE = import.meta.env.DEV
   ? ''
   : (import.meta.env.VITE_API_URL ?? 'http://api.localhost').replace(/\/$/, '');
@@ -9,12 +8,6 @@ export function getApiUrl(path = '') {
   return API_BASE ? `${API_BASE}/${full}` : `/${full}`;
 }
 
-/**
- * Appel API avec en-tête Authorization si token présent.
- * @param {string} path - Chemin (ex: 'events' ou '/api/events')
- * @param {RequestInit} options - Options fetch
- * @returns {Promise<Response>}
- */
 export async function apiFetch(path, options = {}) {
   const url = path.startsWith('http') ? path : getApiUrl(path);
   const token = localStorage.getItem('token');

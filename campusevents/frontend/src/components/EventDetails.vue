@@ -9,7 +9,6 @@
     </div>
 
     <div v-else-if="event" class="content">
-      <!-- En-tête -->
       <div class="header">
         <button @click="goBack" class="btn-back">
           ← Retour
@@ -24,8 +23,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Informations principales -->
       <div class="info-grid">
         <div class="info-card">
           <div class="icon">📅</div>
@@ -72,16 +69,12 @@
           </div>
         </div>
       </div>
-
-      <!-- Description -->
       <div class="section">
         <h2>📋 Description</h2>
         <p class="description">
           {{ event.description || 'Aucune description disponible.' }}
         </p>
       </div>
-
-      <!-- Actions -->
       <div v-if="isAuthenticated" class="actions">
         <button
           v-if="!isRegistered"
@@ -113,8 +106,6 @@
       <div v-else class="auth-notice">
         <p>👉 Connectez-vous pour vous inscrire à cet événement</p>
       </div>
-
-      <!-- Liste des participants (pour les utilisateurs connectés) -->
       <div v-if="isAuthenticated && attendees.length > 0" class="section">
         <h2>👥 Participants ({{ attendees.length }})</h2>
         <div class="attendees-list">
@@ -157,7 +148,6 @@ const props = defineProps({
 const router = useRouter();
 const { isAuthenticated, isAdmin, currentUser } = useAuth();
 
-// État
 const event = ref(null);
 const attendees = ref([]);
 const loading = ref(false);
@@ -169,7 +159,6 @@ const isPastEvent = computed(() => {
   return new Date(event.value.startAt) < new Date();
 });
 
-// Fonctions
 const fetchEvent = async () => {
   loading.value = true;
   error.value = null;
@@ -284,7 +273,6 @@ const formatShortDate = (dateString) => {
   });
 };
 
-// Charger les données au montage
 onMounted(() => {
   fetchEvent();
   fetchAttendees();

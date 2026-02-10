@@ -110,7 +110,6 @@ import { getApiUrl, apiFetch } from '../lib/api.js';
 const router = useRouter();
 const { isAuthenticated, isAdmin } = useAuth();
 
-// État
 const events = ref([]);
 const myRegistrations = ref([]);
 const loading = ref(false);
@@ -128,7 +127,6 @@ const availableTags = [
   'ecologie', 'musique', 'atelier', 'entrepreneuriat'
 ];
 
-// Fonctions
 const fetchEvents = async () => {
   loading.value = true;
   error.value = null;
@@ -180,7 +178,6 @@ const toggleTag = (tag) => {
   fetchEvents();
 };
 
-// Debounce pour la recherche
 let searchTimeout;
 const debouncedSearch = () => {
   clearTimeout(searchTimeout);
@@ -234,7 +231,6 @@ const formatDate = (dateString) => {
   });
 };
 
-// Charger les données au montage
 onMounted(() => {
   fetchEvents();
   fetchMyRegistrations();
